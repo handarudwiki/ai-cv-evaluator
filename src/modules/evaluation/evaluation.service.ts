@@ -21,6 +21,10 @@ export class EvaluationService {
                 cvDocumentId: dto.cvDocumentId,
                 reportDocumentId: dto.reportDocumentId,
                 status: EvaluationStatus.QUEUED
+            },
+            select: {
+                id: true,
+                status: true,
             }
         })
 
@@ -45,6 +49,7 @@ export class EvaluationService {
 
         this.logger.log(`Queued evaluation job with ID: ${evaluationJob.id}`);
         
+        evaluationJob.status = evaluationJob.status.toLowerCase() as EvaluationStatus;
         return evaluationJob;
     }
 
@@ -59,7 +64,7 @@ export class EvaluationService {
         if (!job) {
             throw new BadRequestException(`Evaluation job with ID ${jobId} not found`);
         }
-        
+
     return job.status === EvaluationStatus.COMPLETED
     ? {
         id: job.id,
