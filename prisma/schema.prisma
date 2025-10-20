@@ -42,7 +42,7 @@ model Result {
   @@map("results")
 }
 
-model EvaluationJob{
+model EvaluationJob { 
   id String @id @default(uuid())
   status EvaluationStatus
   jobTitle String
