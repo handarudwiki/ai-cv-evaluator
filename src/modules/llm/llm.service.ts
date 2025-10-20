@@ -1,5 +1,5 @@
 import { GenerativeModel, GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 export interface LLMCallOptions {
     systemPrompt?: string;
@@ -19,14 +19,12 @@ interface GeminiUsage {
 export class LLMService {
     private readonly logger = new Logger(LLMService.name);
     private readonly genai: GoogleGenerativeAI;
-    private readonly model: GenerativeModel;
     private readonly MAX_RETRIES = 3;
     private readonly TIMEOUT_MS = 10000;
     private readonly RETRY_DELAY_MS = 1000;
 
     constructor() {
         this.genai = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '')
-        this.model = this.genai.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
 
     async callWithRetry<T>(
