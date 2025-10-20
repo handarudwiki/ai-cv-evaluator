@@ -26,11 +26,51 @@ model Document {
   @@map("documents")
 }
 
-enum DocumentType{
+model Result {
+  id String @id @default(uuid())
+  cvMatchRate Float
+  cvFeedback String
+  projectScore Float
+  projectFeedback String
+  overallSummary String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  evaluationJob EvaluationJob? @relation("JobResult")
+
+  @@map("results")
+}
+
+model EvaluationJob{
+  id String @id @default(uuid())
+  status EvaluationStatus
+  jobTitle String
+  cvDocumentId String
+  reportDocumentId String
+  resultId String? @unique
+  error String?
+
+  result Result? @relation("JobResult",fields: [resultId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("evaluation_jobs")
+}
+
+enum DocumentType {
   CV
   PROJECT_REPORT
   JOB_DESCRIPTION
   CASE_STUDY
   CV_RUBRIC
   PROJECT_RUBRIC
+}
+
+enum EvaluationStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
 }
