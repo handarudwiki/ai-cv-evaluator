@@ -5,6 +5,13 @@ import { PrismaService } from "src/providers/prisma.service";
 import { EvaluationRequestDto } from "./dto/evaluation.req";
 import { EvaluationStatus } from "generated/prisma";
 
+export interface EvaluationJobData {
+  jobId: string;
+  cvDocumentId: string;
+  reportDocumentId: string;
+  jobTitle: string;
+}
+
 @Injectable()
 export class EvaluationService {
     private readonly logger = new Logger(EvaluationService.name);
@@ -35,7 +42,7 @@ export class EvaluationService {
                 jobTitle: dto.jobTitle,
                 cvDocumentId: dto.cvDocumentId,
                 reportDocumentId: dto.reportDocumentId
-            },
+            } as EvaluationJobData,
             {
                 attempts: 3,
                 backoff: {
