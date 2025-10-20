@@ -1,4 +1,4 @@
-import { GenerativeModel, GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
+import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from "@google/genai";
 import { Injectable, Logger } from "@nestjs/common";
 
 export interface LLMCallOptions {
@@ -18,13 +18,13 @@ interface GeminiUsage {
 @Injectable()
 export class LLMService {
     private readonly logger = new Logger(LLMService.name);
-    private readonly genai: GoogleGenerativeAI;
+    private readonly genai: GoogleGenAI;
     private readonly MAX_RETRIES = 3;
     private readonly TIMEOUT_MS = 10000;
     private readonly RETRY_DELAY_MS = 1000;
 
     constructor() {
-        this.genai = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '')
+        this.genai = new GoogleGenAI({})
     }
 
     async callWithRetry<T>(
@@ -39,45 +39,26 @@ export class LLMService {
 
                 const startTime = Date.now();
 
-                const model = await this.genai.getGenerativeModel({
+                const fullPrompt = this.buildFullPrompt(options.systemPrompt || '', options.userPrompt || '');
+
+                const resultPromise =  this.genai.models.generateContent({
                     model: "gemini-1.5-flash",
-                    generationConfig: {
+                    config: {
                         maxOutputTokens: options.maxTokens ?? 2500,
                         temperature: options.temperature ?? 0.3,
                         ...(options.responseFormat === 'json' && {
                             responseFormat: { type: 'json' }
                         })
                     },
-                    safetySettings: [
-                        {
-                            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                            threshold: HarmBlockThreshold.BLOCK_NONE,
-                        },
-                        {
-                            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                            threshold: HarmBlockThreshold.BLOCK_NONE,
-                        },
-                        {
-                            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                            threshold: HarmBlockThreshold.BLOCK_NONE,
-                        },
-                        {
-                            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                            threshold: HarmBlockThreshold.BLOCK_NONE,
-                        },
-                    ]
+                    contents: [fullPrompt],
+                });
 
-                })
-
-                const fullPrompt = this.buildFullPrompt(options.systemPrompt || '', options.userPrompt || '');
-
-                const resultPromise = model.generateContent(fullPrompt);
+;
                 const result = await this.withTimeout(resultPromise, this.TIMEOUT_MS);
 
                 const duration = Date.now() - startTime;
                 
-                const responseText = result.response;
-                const content = responseText.text();
+                const content = result.text;
 
                 if (!content) {
                     throw new Error('Received empty response from LLM');
