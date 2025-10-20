@@ -33,7 +33,7 @@ export class LLMService {
         options: LLMCallOptions,
         parseResponse: (response: string) => T
     ): Promise<T> {
-        let lastError: Error;
+        let lastError: Error | null = null;
 
         for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
             try {
@@ -156,7 +156,7 @@ export class LLMService {
         }
 
         this.logger.error('All LLM call attempts failed', { error: lastError?.message });
-        throw lastError || new Error('LLM call failed after all retries');
+        throw lastError ?? new Error('LLM call failed after all retries');
     }
 
     private buildFullPrompt(systemPrompt: string, userPrompt: string): string {
