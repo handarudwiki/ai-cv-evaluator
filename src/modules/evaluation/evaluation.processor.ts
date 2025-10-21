@@ -8,6 +8,7 @@ import { PdfService } from "src/providers/pdf.service";
 import { Job } from "bullmq";
 import { DocumentType, EvaluationJob, EvaluationStatus } from "generated/prisma";
 import { calculateCVMatchRate, calculateProjectScore } from "src/common/util/scoring.util";
+import { EvaluationJobData } from "./evaluation.service";
 
 interface CVEvaluation {
     technical_skills: number;
@@ -40,7 +41,7 @@ export class EvaluationPromptProcessor extends WorkerHost{
         super();
     }
 
-    async process(job: Job<EvaluationJob>) {
+    async process(job: Job<EvaluationJobData>) {
         this.logger.log(`Processing evaluation job ID: ${job.data.jobId}`);
 
         try {
@@ -78,29 +79,44 @@ export class EvaluationPromptProcessor extends WorkerHost{
 
             // Aggregate results
             const result = {
-                cv_match_rate: calculateCVMatchRate(cvEvaluation),
+                cv_match_rate: calculateCVMatchRate({
+                    Technical_skills: cvEvaluation.technical_skills,
+                    Experience_level: cvEvaluation.experience_level,
+                    Relevant_achievements: cvEvaluation.relevant_achievements,
+                    Cultural_fit: cvEvaluation.cultural_fit,
+                }),
                 cv_feedback: cvEvaluation.feedback,
-                project_score: calculateProjectScore(projectEvaluation),
+                project_score: calculateProjectScore({
+                    correctness: projectEvaluation.correctness,
+                    codeQuality: projectEvaluation.code_quality,
+                    resilience: projectEvaluation.resilience,
+                    documentation: projectEvaluation.documentation,
+                    creativity: projectEvaluation.creativity,
+                }),
                 project_feedback: projectEvaluation.feedback,
                 overall_summary: overall_summary
             }
 
+            const newResult = await this.prismaService.result.create({
+                data: {
+                    cvMatchRate: result.cv_match_rate,
+                    cvFeedback: result.cv_feedback,
+                    projectScore: result.project_score,
+                    projectFeedback: result.project_feedback,
+                    overallSummary: result.overall_summary,
+                }
+            })
+
             await this.prismaService.evaluationJob.update({
                 where: { id: job.data.jobId },
                 data: {
-                    result: {
-                        connect:{
-                            cvMatchRate: result.cv_match_rate,
-                            cvFeedback: result.cv_feedback,
-                            projectScore: result.project_score,
-                            projectFeedback: result.project_feedback,
-                            overallSummary: result.overall_summary
-                        }
-                    },
-                    status: EvaluationStatus.COMPLETED
+                    status: EvaluationStatus.COMPLETED,
+                    resultId: newResult.id
                 }
             });
-            
+          
+            this.logger.log(`Evaluation job ID: ${job.data.jobId} completed successfully`);
+        
             return result;
         } catch (error) {
             await this.updateJobStatus(job.data.jobId, EvaluationStatus.FAILED);
@@ -139,7 +155,7 @@ export class EvaluationPromptProcessor extends WorkerHost{
         const evaluation = await this.llmService.callWithRetry<ProjectEvaluation>(
             {
                 systemPrompt: this.prompService.getProjectEvaluationSystemPrompt(),
-                userPrompt: this.prompService.buildProjectEvaluationUserPrompt(reportText, jobTitle, jobContext),
+                userPrompt: this.prompService.buildProjectEvaluationUserPrompt(reportText, jobContext),
                 temperature: 0.3,
                 responseFormat: 'json'
             },

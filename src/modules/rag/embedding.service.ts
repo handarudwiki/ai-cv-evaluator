@@ -33,7 +33,7 @@ export class EmbeddingService {
                 contents: texts,
             });
 
-            return response.embeddings?.values.map(item => item) || [];
+            return [...response.embeddings?.values() || []].map(item => item.values || []) || [];
         } catch (error) {
             this.logger.error('Error generating batch embeddings', error);
             throw error;

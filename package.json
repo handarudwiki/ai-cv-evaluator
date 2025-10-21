@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "ingest-documents": "node src/scripts/ingest.document.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -32,8 +33,11 @@
     "bullmq": "^5.61.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "install": "^0.13.0",
     "multer": "^2.0.2",
-    "pdf-parse": "^2.4.4",
+    "npm": "^11.6.2",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^5.4.296",
     "prisma": "^6.17.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -47,6 +51,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/pdf-parse": "^1.1.5",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",

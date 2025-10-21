@@ -1,9 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import * as fs from 'fs/promises';
-import * as pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist';
 
 @Injectable()
-export class PdfService {
+export class PdfService implements OnModuleInit{
+
+    async onModuleInit() {}
+
     private readonly logger = new Logger(PdfService.name);
 
     async extractText(filepath: string): Promise<string> {
@@ -12,9 +16,19 @@ export class PdfService {
 
             const dataBuffer = await fs.readFile(filepath);
 
-            const data = await pdfParse(dataBuffer);
+            const pdf = await pdfjsLib.getDocument({ data: dataBuffer }).promise;
 
-            const text = this.cleanText(data.text);
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(' ');
+                fullText += pageText + '\n';
+            }
+
+            const text = this.cleanText(fullText);
 
             this.logger.log(`Extracted text length: ${text.length} characters`);
             
@@ -36,11 +50,11 @@ export class PdfService {
 
     async extractCvStructure(filepath: string): Promise<{
         text: string;
-        sections: Record<string, string[]>;
+        sections: Record<string, string>;
     }> {
         const text = await this.extractText(filepath);
 
-        const sections: Record<string, string[]> = {};
+        const sections: Record<string, string> = {};
         const sectionHeaders = [
             'experience',
             'education',
@@ -51,7 +65,7 @@ export class PdfService {
         ]
 
         const lines = text.split('\n');
-        let currentSection: 'general';
+        let currentSection= 'general';
         let currentContent: string[] = [];
 
         for (const line of lines) {
@@ -92,7 +106,7 @@ export class PdfService {
                 return false
             }
 
-            await pdfParse(dataBuffer);
+            await pdfjsLib.getDocument({ data: dataBuffer }).promise;
 
             return true;
         } catch(e) {
