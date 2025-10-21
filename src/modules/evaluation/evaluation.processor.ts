@@ -7,6 +7,7 @@ import { PromptService } from "../llm/prompt.service";
 import { PdfService } from "src/providers/pdf.service";
 import { Job } from "bullmq";
 import { DocumentType, EvaluationJob, EvaluationStatus } from "generated/prisma";
+import { calculateCVMatchRate, calculateProjectScore } from "src/common/util/scoring.util";
 
 interface CVEvaluation {
     technical_skills: number;
@@ -72,14 +73,39 @@ export class EvaluationPromptProcessor extends WorkerHost{
             this.logger.log('Completed Project evaluation');
 
             // Final summary
-            const finalSummary = await this.generateFinalSummary(cvEvaluation, projectEvaluation, job.data.jobTitle);
+            const overall_summary = await this.generateFinalSummary(cvEvaluation, projectEvaluation, job.data.jobTitle);
             this.logger.log('Generated final summary for evaluation');
 
-            // Save result to database
+            // Aggregate results
+            const result = {
+                cv_match_rate: calculateCVMatchRate(cvEvaluation),
+                cv_feedback: cvEvaluation.feedback,
+                project_score: calculateProjectScore(projectEvaluation),
+                project_feedback: projectEvaluation.feedback,
+                overall_summary: overall_summary
+            }
 
-
-        } catch (error) {
+            await this.prismaService.evaluationJob.update({
+                where: { id: job.data.jobId },
+                data: {
+                    result: {
+                        connect:{
+                            cvMatchRate: result.cv_match_rate,
+                            cvFeedback: result.cv_feedback,
+                            projectScore: result.project_score,
+                            projectFeedback: result.project_feedback,
+                            overallSummary: result.overall_summary
+                        }
+                    },
+                    status: EvaluationStatus.COMPLETED
+                }
+            });
             
+            return result;
+        } catch (error) {
+            await this.updateJobStatus(job.data.jobId, EvaluationStatus.FAILED);
+            this.logger.error(`Failed to process evaluation job ID: ${job.data.jobId}. Error: ${error.message}`);
+            throw error;
         }
     }
 
