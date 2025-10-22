@@ -6,7 +6,7 @@ import { RagService } from "../rag/rag.service";
 import { PromptService } from "../llm/prompt.service";
 import { PdfService } from "src/providers/pdf.service";
 import { Job } from "bullmq";
-import { DocumentType, EvaluationJob, EvaluationStatus } from "generated/prisma";
+import { DocumentType, EvaluationStatus } from "generated/prisma";
 import { calculateCVMatchRate, calculateProjectScore } from "src/common/util/scoring.util";
 import { EvaluationJobData } from "./evaluation.service";
 
