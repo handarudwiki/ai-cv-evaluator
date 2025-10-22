@@ -11,16 +11,20 @@ export class DocumentService {
     ) { }
 
     async create(dtos: CreateDocumentDto[]) {
-        const documents = await this.prismaService.document.createMany({
-            data: dtos.map(dto => ({
-                fileName: dto.fileName,
-                filePath: dto.filepath,
-                type: dto.type,
-            })),
-        });
+       const documents = await Promise.all(
+            dtos.map(dto =>
+                this.prismaService.document.create({
+                data: {
+                    fileName: dto.fileName,
+                    filePath: dto.filepath,
+                    type: dto.type,
+                },
+                })
+            )
+        );
 
         dtos.forEach((dto, index) => {
-            this.logger.log(`Document created: ${documents[index].id}`, {
+            this.logger.log(`Document created:`, {
                 fileName: dto.fileName,
                 type: dto.type,
             });

@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Param, Post, UploadedFile, UploadedFiles, UseInterceptors } from "@nestjs/common";
 import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname } from "path/win32";
@@ -9,7 +9,7 @@ import { DocumentType } from "generated/prisma";
 export class DocumentController {
     constructor(private readonly documentService: DocumentService) {}
 
-    @Post()
+    @Post('/upload')
     @HttpCode(HttpStatus.CREATED)
     @UseInterceptors(
         FileFieldsInterceptor(
@@ -42,7 +42,7 @@ export class DocumentController {
         })
     )
     async uploadDocument(
-        @UploadedFile() files: {
+        @UploadedFiles() files: {
             cv?: Express.Multer.File[];
             project_report?: Express.Multer.File[];
         },
@@ -55,7 +55,7 @@ export class DocumentController {
             throw new BadRequestException('At least one file (CV or Project Report) must be uploaded');
         }
 
-        const documents = this.documentService.create([
+        const documents = await this.documentService.create([
             {
                 fileName : cv?.filename!,
                 filepath: cv?.path!,
@@ -68,7 +68,7 @@ export class DocumentController {
             }
         ]);
 
-        return documents
+        return documents;
     }
 
     @Get(':id')
