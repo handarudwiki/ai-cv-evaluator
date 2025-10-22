@@ -15,22 +15,22 @@ const CHUNK_OVERLAP=50
 
 const DOCUMENTS = [
     {
-        url: 'http://localhost:3000/static/job-description.pdf',
+        url: 'http://localhost:3000/static/documents/job-description.pdf',
         type: "JOB_DESCRIPTION",
         description: 'Backend Engineer Job Description',
     },
     {
-        url: 'http://localhost:3000/static/case-study-brief.pdf',
+        url: 'http://localhost:3000/static/documents/case-study-brief.pdf',
         type: "CASE_STUDY",
         description: 'Case Study Requirements and Brief',
     },
     {
-        url: 'http://localhost:3000/static/cv-rubric.pdf',
+        url: 'http://localhost:3000/static/documents/cv-rubric.pdf',
         type: "CV_RUBRIC",
         description: 'CV Evaluation Scoring Rubric',
     },
     {
-        url: 'http://localhost:3000/static/project-rubric.pdf',
+        url: 'http://localhost:3000/static/documents/project-rubric.pdf',
         type: "PROJECT_RUBRIC",
         description: 'Project Evaluation Scoring Rubric',
     },

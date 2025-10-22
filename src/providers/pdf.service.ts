@@ -1,7 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import * as fs from 'fs/promises';
-import pdfParse from 'pdf-parse';
-import * as pdfjsLib from 'pdfjs-dist';
+import {PDFParse} from "pdf-parse";
 
 @Injectable()
 export class PdfService implements OnModuleInit{
@@ -10,25 +8,14 @@ export class PdfService implements OnModuleInit{
 
     private readonly logger = new Logger(PdfService.name);
 
-    async extractText(filepath: string): Promise<string> {
+    async extractText(filePath: string): Promise<string> {
         try {
-            this.logger.log(`Reading PDF file from path: ${filepath}`);
+            this.logger.log(`Reading PDF file from URL: ${process.env.APP_URL}/static/${filePath}`);
 
-            const dataBuffer = await fs.readFile(filepath);
+            const parser = await new PDFParse({ url: `${process.env.APP_URL}/static/${filePath}` });
+            const data = await parser.getText({parsePageInfo: true});
 
-            const pdf = await pdfjsLib.getDocument({ data: dataBuffer }).promise;
-
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items
-                .map((item: any) => item.str)
-                .join(' ');
-                fullText += pageText + '\n';
-            }
-
-            const text = this.cleanText(fullText);
+            const text = this.cleanText(data.text || '');
 
             this.logger.log(`Extracted text length: ${text.length} characters`);
             
@@ -97,17 +84,11 @@ export class PdfService implements OnModuleInit{
 
     async validatePdf(filepath: string): Promise<boolean> {
         try {
-            this.logger.log(`Validating PDF file at path: ${filepath}`);
+            this.logger.log(`Validating PDF file at URL: ${process.env.APP_URL}/static/${filepath}`);
 
-            const dataBuffer = await fs.readFile(filepath);
-
-            const header = dataBuffer.slice(0, 5).toString();
-            if (!header.startsWith('%PDF')) {
-                return false
-            }
-
-            await pdfjsLib.getDocument({ data: dataBuffer }).promise;
-
+            const parser = await new PDFParse({ url: `${process.env.APP_URL}/static/${filepath}` });
+            await parser.getText({parsePageInfo: true});
+            
             return true;
         } catch(e) {
             return false;
