@@ -1,28 +1,5 @@
 AI-Powered CV Evaluator
 An automated backend service for screening job applications using AI/LLM technology, RAG (Retrieval-Augmented Generation), and async job processing.
-🏗️ Architecture Overview
-┌─────────────────────────────────────────────────────────────┐
-│                      API Layer (NestJS)                      │
-│  POST /upload  │  POST /evaluate  │  GET /result/:id        │
-└────────┬─────────────────┬───────────────────┬──────────────┘
-         │                 │                   │
-         ▼                 ▼                   ▼
-    ┌────────┐      ┌─────────────┐     ┌──────────┐
-    │  File  │      │  BullMQ     │     │ Database │
-    │Storage │      │  + Redis    │     │PostgreSQL│
-    └────────┘      └──────┬──────┘     └──────────┘
-                           │
-                    ┌──────▼─────────┐
-                    │  Worker Pool    │
-                    │  (Processor)    │
-                    └──────┬──────────┘
-                           │
-            ┌──────────────┼──────────────┐
-            ▼              ▼              ▼
-      ┌─────────┐    ┌─────────┐   ┌──────────┐
-      │ Qdrant  │    │ Gemini  │   │   PDF    │
-      │ (RAG)   │    │  (LLM)  │   │  Parser  │
-      └─────────┘    └─────────┘   └──────────┘
 🚀 Quick Start
 Prerequisites
 
@@ -34,49 +11,49 @@ bash# Clone repository
 git clone <your-repo-url>
 cd ai-cv-evaluator
 
-# Install dependencies
+## Install dependencies
 npm install
 
-# Copy environment file
+## Copy environment file
 cp .env.example .env
 
-# Edit .env and add your Gemini API key
+## Edit .env and add your Gemini API key
 nano .env
 2. Start Infrastructure
 bash# Start PostgreSQL, Redis, and Qdrant
 
-# Wait for services to be healthy
+## Wait for services to be healthy
 3. Setup Database
 bash# Generate Prisma client
 npm run prisma:generate
 
-# Run migrations
+## Run migrations
 npm run prisma:migrate
 
-# (Optional) Open Prisma Studio
+## (Optional) Open Prisma Studio
 npm run prisma:studio
 4. Ingest System Documents
 bash# Place your documents in ./documents/ folder:
-# - job-description.pdf
-# - case-study-brief.pdf
-# - cv-rubric.pdf
-# - project-rubric.pdf
+ - job-description.pdf
+ - case-study-brief.pdf
+ - cv-rubric.pdf
+ - project-rubric.pdf
 
-# Run ingestion script
+## Run ingestion script
 npm run ingest-documents
 
-# Expected output:
-# 🚀 Starting document ingestion...
-# 📦 Initializing Qdrant collection...
-# ✓ Collection created
-# 📄 Processing: Backend Engineer Job Description
-# ...
-# ✅ Ingestion completed successfully!
+## Expected output:
+### 🚀 Starting document ingestion...
+### 📦 Initializing Qdrant collection...
+### ✓ Collection created
+### 📄 Processing: Backend Engineer Job Description
+### ...
+### ✅ Ingestion completed successfully!
 5. Start Application
 bash# Development mode (with hot reload)
 npm run start:dev
 
-# Production mode
+## Production mode
 npm run build
 npm run start:prod
 The API will be available at http://localhost:3000
@@ -92,17 +69,17 @@ QDRANT_API_KEY=
 QDRANT_URL=
 GEMINI_API_KEY=                
 
-# Database
+## Database
 DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"
 
-# Redis
+## Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# Qdrant Vector Database
+## Qdrant Vector Database
 QDRANT_URL=http://localhost:6333
 
-# Gemini API
+## Gemini API
 GEMINI_API_KEY=sk-...        # Your Gemini API key
 Adjusting LLM Parameters
 Edit src/modules/llm/llm.service.ts:
@@ -124,52 +101,13 @@ const CHUNK_OVERLAP = 50;    // Overlap between chunks
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 
 
-# Poll for results
+## Poll for results
 watch curl http://localhost:3000/result/<job-id>
 Unit Tests
 bashnpm run test
 npm run test:watch
 npm run test:cov
 
-🏗️ Project Structure
-ai-cv-evaluator/
-├── src/
-│   ├── modules/
-│   │   ├── evaluation/          # Main evaluation pipeline
-│   │   │   ├── evaluation.controller.ts
-│   │   │   ├── evaluation.service.ts
-│   │   │   ├── evaluation.processor.ts  # BullMQ worker
-│   │   │   └── evaluation.module.ts
-│   │   ├── llm/                 # LLM integration
-│   │   │   ├── llm.service.ts
-│   │   │   └── prompt.service.ts
-│   │   ├── rag/                 # RAG system
-│   │   │   ├── rag.service.ts
-│   │   │   └── embedding.service.ts
-│   │   ├── pdf/                 # PDF parsing
-│   │   │   └── pdf-parser.service.ts
-│   │   ├── documents/           # File upload
-│   │   │   └── documents.controller.ts
-│   │   └── prisma/              # Database ORM
-│   │       └── prisma.service.ts
-│   ├── common/
-│   │   └── utils/
-│   │       └── scoring.utils.ts
-│   ├── prisma/
-│   │   └── schema.prisma
-│   └── main.ts
-├── scripts/
-│   └── ingest-documents.ts      # Document ingestion
-├── documents/                   # System documents
-│   ├── job-description.pdf
-│   ├── case-study-brief.pdf
-│   ├── cv-rubric.pdf
-│   └── project-rubric.pdf
-├── uploads/                     # Uploaded files (gitignored)
-├── docker-compose.yml
-├── .env.example
-├── package.json
-└── README.md
 
 🎯 Design Decisions
 1. Why NestJS?
@@ -277,35 +215,25 @@ View Logs
 bash# Application logs
 npm run start:dev  # Logs appear in console
 
-# Docker logs
-docker-compose logs -f
 
-# Specific service logs
-docker-compose logs -f postgres
-docker-compose logs -f redis
-docker-compose logs -f qdrant
-Check Queue Status
-bash# Install Bull Board for visual dashboard (optional)
-npm install @bull-board/express @bull-board/api
-
-# Access dashboard at http://localhost:3000/admin/queues
+## Access dashboard at http://localhost:3000/admin/queues
 Database Inspection
 bash# Open Prisma Studio
 npm run prisma:studio
 
-# Or use psql
+## Or use psql
 docker exec -it cv-evaluator-db psql -U postgres -d cv_evaluator
 
-# Check job statuses
+## Check job statuses
 SELECT id, status, created_at FROM "EvaluationJob" ORDER BY created_at DESC LIMIT 10;
 Qdrant Inspection
 bash# Check collection info
 curl http://localhost:6333/collections/evaluation_documents
 
-# Count points
+## Count points
 curl http://localhost:6333/collections/evaluation_documents/points/count
 
-# Search test
+## Search test
 curl -X POST http://localhost:6333/collections/evaluation_documents/points/search \
   -H "Content-Type: application/json" \
   -d '{
@@ -322,42 +250,42 @@ cat .env | grep GEMINI_API_KEY
 # Ensure it's exported
 export GEMINI_API_KEY=sk-...
 
-# Restart application
+## Restart application
 npm run start:dev
 Issue: "Cannot connect to Redis"
 Solution:
 bash# Check Redis is running
 docker-compose ps
 
-# Check Qdrant is accessible
+## Check Qdrant is accessible
 curl http://localhost:6333/health
 Issue: "Job stuck in PROCESSING status"
 Solution:
 bash# Check worker logs for errors
-# Jobs timeout after 5 minutes automatically
+## Jobs timeout after 5 minutes automatically
 
-# Manually update job status in database
+## Manually update job status in database
 npm run prisma:studio
-# Find job and update status to FAILED
+## Find job and update status to FAILED
 Issue: "PDF parsing failed"
 Solution:
 bash# Ensure PDF is valid
 file your-document.pdf
 
-# Try opening in PDF reader
-# If corrupted, re-export/save as new PDF
+## Try opening in PDF reader
+## If corrupted, re-export/save as new PDF
 
-# Check file size (very large PDFs may timeout)
+## Check file size (very large PDFs may timeout)
 ls -lh your-document.pdf
 Issue: "Rate limit exceeded"
 Solution:
 bash# Check Gemini usage dashboard
-# The system will automatically retry with backoff
+## The system will automatically retry with backoff
 
-# If persistent, consider:
-# 1. Reduce concurrent workers
-# 2. Add longer delays between retries
-# 3. Upgrade Gemini plan
+If persistent, consider:
+ 1. Reduce concurrent workers
+ 2. Add longer delays between retries
+ 3. Upgrade Gemini plan
 
 📈 Performance Optimization
 1. Increase Worker Concurrency
@@ -422,45 +350,45 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 📝 Testing with Real Data
 Test Scenario 1: Strong Candidate
 bash# Upload a CV with:
-# - 5+ years backend experience
-# - Python/Node.js skills
-# - Cloud experience (AWS/GCP)
-# - AI/LLM projects mentioned
+ - 5+ years backend experience
+ - Python/Node.js skills
+ - Cloud experience (AWS/GCP)
+ - AI/LLM projects mentioned
 
-# Upload a project report with:
-# - Complete implementation
-# - Clean code structure
-# - Good documentation
-# - Error handling
+ Upload a project report with:
+ - Complete implementation
+ - Clean code structure
+ - Good documentation
+ - Error handling
 
-# Expected Result:
-# - CV match rate: 0.80-0.95
-# - Project score: 4.0-5.0
-# - Overall: "Strong Hire" or "Hire"
+ Expected Result:
+ - CV match rate: 0.80-0.95
+ - Project score: 4.0-5.0
+ - Overall: "Strong Hire" or "Hire"
 Test Scenario 2: Junior Candidate
 bash# Upload a CV with:
-# - 1-2 years experience
-# - Basic backend skills
-# - No AI/LLM experience
+- 1-2 years experience
+- Basic backend skills
+- No AI/LLM experience
 
-# Upload a project report with:
-# - Basic implementation
-# - Some structure issues
-# - Minimal documentation
+Upload a project report with:
+- Basic implementation
+- Some structure issues
+- Minimal documentation
 
-# Expected Result:
-# - CV match rate: 0.40-0.60
-# - Project score: 2.5-3.5
-# - Overall: "Consider" or "Maybe"
+Expected Result:
+- CV match rate: 0.40-0.60
+- Project score: 2.5-3.5
+- Overall: "Consider" or "Maybe"
 Test Scenario 3: Edge Cases
 bash# Test with:
-# - Very short CV (1 page)
-# - Very long CV (10+ pages)
-# - Non-English CV
-# - Scanned PDF (image-based)
-# - Corrupted PDF
+- Very short CV (1 page)
+- Very long CV (10+ pages)
+- Non-English CV
+- Scanned PDF (image-based)
+- Corrupted PDF
 
-# Verify error handling and logging
+Verify error handling and logging
 
 🎓 Learning Resources
 Understanding RAG
