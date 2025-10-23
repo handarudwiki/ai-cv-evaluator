@@ -210,7 +210,7 @@ export class EvaluationPromptProcessor extends WorkerHost{
         const evaluation = await this.llmService.callWithRetry<CVEvaluation>(
             {
                 systemPrompt: this.prompService.getCvEvaluationSystemPrompt(),
-                userPrompt: this.prompService.buildCvEvaluationUserPrompt(cvText, jobTitle, jobContext),
+                userPrompt: this.prompService.buildCvEvaluationUserPrompt(cvText, jobContext, jobTitle),
                 temperature: 0.3,
                 responseFormat: 'json'
             },

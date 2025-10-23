@@ -178,6 +178,7 @@ class DocumentIngestion {
             },
         }));
 
+
         const batchSize = 100;
         for (let i = 0; i < points.length; i += batchSize) {
             const batch = points.slice(i, i + batchSize);

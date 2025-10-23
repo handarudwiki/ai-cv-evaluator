@@ -1,4 +1,4 @@
-import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Injectable, Logger } from "@nestjs/common";
 
 export interface LLMCallOptions {
@@ -20,8 +20,9 @@ export class LLMService {
     private readonly logger = new Logger(LLMService.name);
     private readonly genai: GoogleGenAI;
     private readonly MAX_RETRIES = 3;
-    private readonly TIMEOUT_MS = 10000;
+    private readonly TIMEOUT_MS = 30000;
     private readonly RETRY_DELAY_MS = 1000;
+    private readonly MODEL = 'gemini-2.5-pro';
 
     constructor() {
         this.genai = new GoogleGenAI({})
@@ -40,25 +41,34 @@ export class LLMService {
                 const startTime = Date.now();
 
                 const fullPrompt = this.buildFullPrompt(options.systemPrompt || '', options.userPrompt || '');
-
-                const resultPromise =  this.genai.models.generateContent({
-                    model: "gemini-1.5-flash",
-                    config: {
+                const config = {
+                        responseMimeType: options.responseFormat === 'json' ? 'application/json' : 'text/plain',
                         maxOutputTokens: options.maxTokens ?? 2500,
                         temperature: options.temperature ?? 0.3,
-                        ...(options.responseFormat === 'json' && {
-                            responseFormat: { type: 'json' }
-                        })
-                    },
-                    contents: [fullPrompt],
+                }
+
+                console.log("LLM request config:", config);
+
+                const resultPromise = await this.genai.models.generateContent({
+                    model: this.MODEL,
+                    config: config,
+                    contents : fullPrompt,
                 });
 
-;
-                const result = await this.withTimeout(resultPromise, this.TIMEOUT_MS);
+                console.log("LLM request sent with prompt:", fullPrompt);
+                // console.log("LLM request sent with prompt:", await fullPrompt);
+                console.log("response format:", resultPromise.text);
+
+                if (!resultPromise.candidates || resultPromise.candidates.length === 0) {
+                    const blockReason = resultPromise.promptFeedback?.blockReason || 'UNKNOWN';
+                    throw new Error(`Response blocked by safety filters. Reason: ${blockReason}`);
+                }
+
+                // const result = await this.withTimeout(resultPromise, this.TIMEOUT_MS);
 
                 const duration = Date.now() - startTime;
-                
-                const content = result.text;
+
+                const content = resultPromise.text;
 
                 if (!content) {
                     throw new Error('Received empty response from LLM');
@@ -66,7 +76,7 @@ export class LLMService {
 
                 const parsed = parseResponse(content);
 
-                const usage = this.extractUsage(result);
+                const usage = this.extractUsage(resultPromise);
 
                 this.logger.log("LLM call successful", {
                     attempt,
@@ -125,7 +135,7 @@ export class LLMService {
                     break;
                 }
 
-                if( attempt < this.MAX_RETRIES ) {
+                if (attempt < this.MAX_RETRIES) {
                     const waitTime = this.exponentialBackoff(attempt);
                     this.logger.warn(`Unknown error encountered. Retrying after ${waitTime}ms...`);
                     await this.sleep(waitTime);
@@ -153,7 +163,7 @@ export class LLMService {
 
     private extractUsage(result: any): GeminiUsage {
         try {
-            const usageMetadata = result.response.metadata.usage;
+            const usageMetadata = result.response.usaGeMetdata;
             return {
                 promptTokens: usageMetadata.promptTokens || 0,
                 completionTokens: usageMetadata.completionTokens || 0,
@@ -179,7 +189,7 @@ export class LLMService {
 
     private isServerError(error: any): boolean {
         const status = error.status || error.errorDetails?.[0]?.reason || '';
-        
+
         return (
             status === 'INTERNAL' ||
             status === 'UNAVAILABLE' ||

@@ -9,7 +9,9 @@ export class EmbeddingService {
     private readonly EMBEDDING_DIMENSION = 1536;
 
     constructor() {
-        this.genai = new GoogleGenAI({});
+        this.genai = new GoogleGenAI({
+            apiKey: process.env.GEMINI_API_KEY,
+        });
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
@@ -17,9 +19,12 @@ export class EmbeddingService {
             const response = await this.genai.models.embedContent({
                 model: this.EMBEDDING_MODEL,
                 contents: text,
+                config:{
+                    outputDimensionality: this.EMBEDDING_DIMENSION,
+                }
             });
 
-            return response.embeddings?.values[0];
+            return Array.from(response.embeddings?.values() || []).map(item => item.values || [])[0] || [];
         } catch (error) {
             this.logger.error('Error generating embedding', error);
             throw error;
@@ -31,6 +36,9 @@ export class EmbeddingService {
             const response = await this.genai.models.embedContent({
                 model: this.EMBEDDING_MODEL,
                 contents: texts,
+                config:{
+                    outputDimensionality: this.EMBEDDING_DIMENSION,
+                }
             });
 
             return [...response.embeddings?.values() || []].map(item => item.values || []) || [];
